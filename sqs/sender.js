@@ -17,12 +17,10 @@ const buildStandardMessage = (queueUrl, id) => ({
     MessageBody: JSON.stringify({ uuid: uuid.v4(), id: id })
 });
 
-const sendStandardMessage = async _ => {
+const sendStandardMessage = async queueUrl => {
     try {
-        const { QueueUrl } = await computeQueueUrl(STANDARD_QUEUE_NAME);
-
         for(let i = 0; i < MESSAGES_NUMBER; i++) {
-            await sendMessage(buildStandardMessage(QueueUrl, i)); // await to send one after another
+            await sendMessage(buildStandardMessage(queueUrl, i)); // await to send one after another
         }
     } catch(e) {
         console.error("An unexpected error has occurred", e);
@@ -36,20 +34,43 @@ const buildFifoMessage = (queueUrl, id, groupId) => ({
     MessageGroupId: `${groupId}`
 });
 
-const sendFifoMessage = async groupId => {
+const sendFifoMessage = async (queueUrl, groupId) => {
     try {
-        const { QueueUrl } = await computeQueueUrl(FIFO_QUEUE_NAME);
-
         for(let i = 0; i < MESSAGES_NUMBER; i++) {
-            await sendMessage(buildFifoMessage(QueueUrl, groupId * 100 + i, groupId));
+            await sendMessage(buildFifoMessage(queueUrl, groupId * 100 + i, groupId));
         }
     } catch(e) {
         console.error("An unexpected error has occurred", e);
     }
 };
 
-sendStandardMessage();
+(async () => { 
+    const fifoQueueUrl = (await computeQueueUrl(FIFO_QUEUE_NAME)).QueueUrl;
+    const standardQueueUrl = (await computeQueueUrl(STANDARD_QUEUE_NAME)).QueueUrl;
 
-sendFifoMessage(1);
-sendFifoMessage(2);
-sendFifoMessage(3);
+    /*
+    * Deduplication ID no FIFO queues
+    */
+    const firstMessage = buildFifoMessage(fifoQueueUrl, 10000, 1111);
+    //Different message content with same deduplicationId
+    const secondMessage = buildFifoMessage(fifoQueueUrl, 10000, 9999);
+    // Sends the message with deduplicationId 1000 - success.
+    const firstMessageResult = await sendMessage(firstMessage);
+    // Sends the message with deduplicationId 1000 and different content - it won't be delivered because of the
+    // same deduplicationId and yet it is accepted, and no error thrown.
+    const secondMessageResult = await sendMessage(secondMessage);
+
+    // Either a failure/successful response won't throw an error.
+    console.log(firstMessageResult);
+    console.log(secondMessageResult);
+
+
+    /*
+    * Conventional message senders (standard and FIFO)
+    */
+    sendStandardMessage(standardQueueUrl);
+
+    sendFifoMessage(fifoQueueUrl, 1);
+    sendFifoMessage(fifoQueueUrl, 2);
+    sendFifoMessage(fifoQueueUrl, 3);
+})();

@@ -36,7 +36,7 @@ const receiveMessagesWithVisibilityTimeout = async (queueName, VisibilityTimeout
  * - Each request will contain duplicates (message1 will contain duplicated messages, as well as message2).
  * - The intersection of message1 and message2 could contain duplicates messages.
  *
- * Because there's no visibilityTimeout and it's a standard queue (no delivery-once enforcement)
+ * Because there's no visibilityTimeout and it's a standard queue.
  * containing only a few messages (9).
  */
 
