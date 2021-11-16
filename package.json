@@ -9,7 +9,7 @@
   "author": "tomasjuarez.exa@gmail.com",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.676.0",
+    "aws-sdk": "^2.814.0",
     "save": "^2.4.0",
     "uuid": "^8.0.0"
   }
